@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QCM Physique - Niveau 6ème</title>
+  <style>
+    body{font-family:sans-serif;background:#f6f8fa;margin:0;padding:20px;color:#111}
+    .card{background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);padding:15px;margin-bottom:15px}
+    .question{font-weight:bold;margin-bottom:10px}
+    ul{list-style:none;padding:0}
+    li{margin:5px 0}
+    label{cursor:pointer}
+    .feedback{margin-top:10px;padding:10px;border-radius:5px;display:none}
+    .correct{background:#d4edda;color:#155724}
+    .wrong{background:#f8d7da;color:#721c24}
+    .btn{margin-top:10px;padding:8px 12px;background:#0b6efd;color:#fff;border:none;border-radius:5px;cursor:pointer}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    #resultsCard{padding:20px;text-align:center}
+    #allCorrections{margin-top:20px;text-align:left}
+  </style>
+</head>
+<body>
+  <h1>QCM de Physique — Niveau 6ème</h1>
+  <p>Réponds aux questions une par une. Après chaque réponse tu verras la correction. À la fin, tu auras ta note sur 20 et toutes les corrections.</p>
+
+  <div id="quiz"></div>
+
+  <div id="resultsCard" style="display:none" class="card">
+    <div id="finalScore"></div>
+    <p id="finalMessage"></p>
+    <div id="allCorrections"></div>
+    <button class="btn" id="retry">Recommencer</button>
+  </div>
+
+  <script>
+    const questions = [
+      {q:"Quelle est la principale cause qui fait tomber un objet quand on le lâche ?",choices:["La force magnétique","La chaleur","La gravité","La friction"],correct:2,explanation:"La gravité attire les objets vers la Terre."},
+      {q:"Quel état de la matière a une forme propre et un volume propre ?",choices:["Solide","Liquide","Gaz","Plasma"],correct:0,explanation:"Un solide garde sa forme et son volume."},
+      {q:"Dans un circuit électrique simple, que faut-il pour que le courant circule ?",choices:["Une lampe seule","Un conducteur fermé et une source d'énergie","Un interrupteur ouvert","Rien"],correct:1,explanation:"Il faut un circuit fermé et une source d'énergie."},
+      {q:"Quel instrument permet de mesurer la température ?",choices:["Baromètre","Thermomètre","Anémomètre","Chronomètre"],correct:1,explanation:"Le thermomètre mesure la température."},
+      {q:"Quel phénomène explique qu'on entend la voix d'une personne dans une pièce voisine ?",choices:["La lumière traverse les murs","Les ondes sonores traversent l'air et contournent des obstacles","La gravité transporte le son","Les aimants créent du son"],correct:1,explanation:"Le son est une onde qui se propage dans l'air."},
+      {q:"Quel matériau est attiré par un aimant ?",choices:["Plastique","Bois","Fer","Verre"],correct:2,explanation:"Le fer est attiré par un aimant."},
+      {q:"Si tu frottes un ballon sur tes cheveux et que tu le colles au mur, quelle propriété est en jeu ?",choices:["La conduction thermique","L'électricité statique","La gravité","La pression de l'air"],correct:1,explanation:"C'est l'électricité statique."},
+      {q:"Quelle couleur absorbe le plus de chaleur au soleil ?",choices:["Blanc","Jaune clair","Noir","Bleu clair"],correct:2,explanation:"Le noir absorbe plus de chaleur."},
+      {q:"Quel est l'état de l'eau à 0°C sous pression normale ?",choices:["Solide (glace)","Liquide","Gaz","Plasma"],correct:0,explanation:"À 0°C, l'eau gèle et devient solide."},
+      {q:"Quel appareil mesure la pression atmosphérique ?",choices:["Thermomètre","Baromètre","Anémomètre","Voltmètre"],correct:1,explanation:"Le baromètre mesure la pression."},
+      {q:"La lumière se déplace...",choices:["Plus vite que le son","Moins vite que le son","À la même vitesse que le son"],correct:0,explanation:"La lumière est beaucoup plus rapide que le son."},
+      {q:"Quand on chauffe de l'eau, elle devient...",choices:["Glace","Vapeur","Fer","Plasma"],correct:1,explanation:"L'eau devient vapeur (état gazeux)."},
+      {q:"Quel appareil permet de mesurer une tension électrique ?",choices:["Ampèremètre","Voltmètre","Ohmmètre","Thermomètre"],correct:1,explanation:"Un voltmètre mesure la tension."},
+      {q:"Quand on souffle dans une flûte, on produit...",choices:["Des ondes sonores","Des ondes lumineuses","De la chaleur","Du magnétisme"],correct:0,explanation:"La flûte produit du son, donc des ondes sonores."},
+      {q:"De quoi a-t-on besoin pour voir un objet ?",choices:["De l'électricité","De la lumière qui vient ou se reflète sur lui","Du son","Du vent"],correct:1,explanation:"On a besoin de lumière qui atteint nos yeux."}
+    ];
+
+    let current=0;
+    let score=0;
+    const answers=[];
+
+    const quizDiv=document.getElementById('quiz');
+
+    function showQuestion(){
+      quizDiv.innerHTML='';
+      if(current<questions.length){
+        const item=questions[current];
+        const card=document.createElement('div');card.className='card';
+        const qEl=document.createElement('div');qEl.className='question';qEl.textContent=`Question ${current+1} / ${questions.length} — ${item.q}`;
+        const ul=document.createElement('ul');
+        item.choices.forEach((c,i)=>{
+          const li=document.createElement('li');
+          li.innerHTML=`<label><input type=\"radio\" name=\"q${current}\" value=\"${i}\"> ${c}</label>`;
+          ul.appendChild(li);
+        });
+        const btn=document.createElement('button');btn.className='btn';btn.textContent='Vérifier';
+        const feedback=document.createElement('div');feedback.className='feedback';
+        btn.addEventListener('click',()=>handleAnswer(item,card,feedback,btn));
+        card.appendChild(qEl);card.appendChild(ul);card.appendChild(btn);card.appendChild(feedback);
+        quizDiv.appendChild(card);
+      } else {
+        showResults();
+      }
+    }
+
+    function handleAnswer(item,card,feedback,btn){
+      const selected=card.querySelector('input[type=radio]:checked');
+      if(!selected){alert('Choisis une réponse.');return;}
+      const sel=Number(selected.value);
+      const wasCorrect=sel===item.correct;
+      if(wasCorrect)score++;
+      answers.push({question:item.q,choices:item.choices,correct:item.correct,selected:sel,explanation:item.explanation});
+      feedback.style.display='block';
+      if(wasCorrect){feedback.className='feedback correct';feedback.innerHTML='<strong>Bonne réponse ✅</strong><br>'+item.explanation;}
+      else{feedback.className='feedback wrong';feedback.innerHTML='<strong>Mauvaise réponse ❌</strong><br>Bonne réponse : '+item.choices[item.correct]+'<br>'+item.explanation;}
+      btn.disabled=true;
+      setTimeout(()=>{current++;showQuestion();},1200);
+    }
+
+    function showResults(){
+      quizDiv.style.display='none';
+      const total=questions.length;
+      const note=Math.round((score/total)*20);
+      document.getElementById('finalScore').textContent=`Note : ${note}/20 ( ${score}/${total} bonnes réponses )`;
+      let msg=note===20?'Excellent ! 🎉':note>=15?'Très bien 👍':note>=10?'Pas mal 🙂':'Il faut réviser, courage !';
+      document.getElementById('finalMessage').textContent=msg;
+
+      const corrDiv=document.getElementById('allCorrections');
+      corrDiv.innerHTML='<h3>Corrections :</h3>';
+      answers.forEach((a,i)=>{
+        const div=document.createElement('div');div.className='card';
+        div.innerHTML=`<div class='question'>Q${i+1}. ${a.question}</div>`;
+        a.choices.forEach((c,idx)=>{
+          let style='';
+          if(idx===a.correct)style='font-weight:bold;color:green';
+          if(idx===a.selected && idx!==a.correct)style='text-decoration:line-through;color:red';
+          div.innerHTML+=`<div style="${style}">${c}</div>`;
+        });
+        div.innerHTML+=`<div style='margin-top:6px;font-size:0.9em;color:#555'>${a.explanation}</div>`;
+        corrDiv.appendChild(div);
+      });
+
+      document.getElementById('resultsCard').style.display='block';
+    }
+
+    document.getElementById('retry').addEventListener('click',()=>location.reload());
+
+    showQuestion();
+  </script>
+</body>
+</html>
